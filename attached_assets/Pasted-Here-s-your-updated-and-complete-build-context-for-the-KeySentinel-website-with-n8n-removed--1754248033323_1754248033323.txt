@@ -1,0 +1,246 @@
+Here's your updated and complete **build context for the KeySentinel website** (with **n8n removed**), including the tech stack, modules, development flow, and exact steps you’ll follow to go from idea to deployment.
+
+---
+
+# 🛡️ KeySentinel – Build Context Overview
+
+A **secure API key proxy and monitoring platform** that lets developers safely wrap real keys (like Gemini or OpenAI), issue scoped “Sentinel Keys,” and monitor all usage with fine-grained access control, analytics, and alerts.
+
+You’re building a:
+
+* Developer-facing product (like Clerk, Resend, or Railway)
+* With a **frontend dashboard**, **secure proxy backend**, and **logging + email alert system**
+
+---
+
+## 🚀 Tech Stack Overview
+
+| Layer             | Stack                                           | Purpose                                      |
+| ----------------- | ----------------------------------------------- | -------------------------------------------- |
+| **Frontend UI**   | Next.js (App Router) + Tailwind + Framer Motion | Dashboard, key manager, analytics            |
+| **Backend API**   | Vercel API Routes                               | Secure proxy layer, auth, key fetch          |
+| **Database**      | Convex                                          | Stores real keys, Sentinel keys, users, logs |
+| **Email Service** | Resend                                          | Alerts, invites, recovery links              |
+| **LLM APIs**      | Gemini 2.5 / OpenAI                             | Proxied API destinations                     |
+| **Hosting**       | Vercel                                          | UI + API functions (serverless)              |
+
+---
+
+## 📦 Feature Modules
+
+### 🔐 Vault
+
+* Store real API keys (Gemini/OpenAI/etc.) in **Convex**, encrypted.
+* Never exposed in frontend or to public routes.
+* Can name keys, set scopes (e.g., `model:gemini-pro`), and rotate.
+
+### 🪪 Sentinel Keys
+
+* Create scoped proxy keys like `sentinel_abc123`
+* Tied to:
+
+  * Which real key they wrap
+  * Rate limits
+  * Allowed endpoints (e.g., `/v1/generate`)
+  * Ownership and trust level
+
+### 🔁 Proxy Server (via Vercel API Route)
+
+* Publicly accessible route like `/api/proxy`
+* Accepts `Authorization: Bearer sentinel_abc123`
+* Flow:
+
+  1. Authenticates sentinel key
+  2. Pulls corresponding real API key from Convex
+  3. Logs metadata (IP, country, endpoint)
+  4. Checks rate limits and access rules
+  5. Calls external API (e.g., Gemini)
+  6. Returns response to client
+
+### 📊 Analytics
+
+* View key usage by:
+
+  * Time (per hour, day)
+  * IP / geolocation
+  * Sentinel key used
+  * Real provider API hit
+* Graphs: Request volume, latency, quota % used
+
+### 🔔 Notifications
+
+* Using **Resend**, send emails for:
+
+  * Recovery links
+  * Usage alerts (rate limit breached, geo anomaly)
+  * Revoked/suspended key notices
+  * Trusted collaborator invitations
+
+### 👤 Access Control
+
+* Add/remove “trusted developers” (stored in Convex)
+* Only trusted users can view or regenerate keys
+* Sentinel keys can be limited to certain users
+* Auto-recovery for untrusted access via Gmail link
+
+---
+
+## 🧠 Architecture Overview
+
+```txt
+[Frontend UI] <---> [Convex Functions] <---> [Convex Database]
+      ↓                             ↑
+[User Requests]         [Secure Vercel API Route /api/proxy]
+      ↓                             ↓
+[Sentinel Key]        → [Fetch Real Key + Check Rules] → [Gemini/OpenAI]
+                                      ↓
+                            [Log usage in Convex]
+                                      ↓
+                            [Trigger Resend email (if needed)]
+```
+
+---
+
+## 🧩 Convex Schema Sample
+
+```ts
+api_keys: {
+  id: string,
+  ownerId: string,
+  provider: "gemini" | "openai",
+  encryptedKey: string,
+  keyName: string,
+  scopes: string[],
+  revoked: boolean
+}
+
+sentinel_keys: {
+  id: string,
+  key: string, // e.g. sentinel_abc123
+  apiKeyId: string,
+  rateLimit: number,
+  trustedOnly: boolean,
+  createdAt: Date
+}
+
+usage_logs: {
+  sentinelKeyId: string,
+  ip: string,
+  country: string,
+  endpoint: string,
+  timestamp: Date,
+  responseTimeMs: number
+}
+
+trusted_users: {
+  ownerId: string,
+  email: string,
+}
+
+alerts: {
+  userId: string,
+  type: "anomaly" | "rate_limit" | "recovery",
+  triggeredAt: Date,
+  resolved: boolean
+}
+```
+
+---
+
+## 🧰 Frontend Pages (Next.js App Router)
+
+| Route                  | Purpose                                   |
+| ---------------------- | ----------------------------------------- |
+| `/`                    | Landing page: “Secure. Proxy. Monitor.”   |
+| `/login`               | Login via Clerk/Auth0                     |
+| `/dashboard`           | Main dashboard shell                      |
+| `/dashboard/vault`     | Add/view/manage real provider API keys    |
+| `/dashboard/keys`      | Create/revoke sentinel keys               |
+| `/dashboard/analytics` | View usage logs, trends                   |
+| `/dashboard/alerts`    | Email alert settings and history          |
+| `/dashboard/trusted`   | Add/remove trusted collaborators          |
+| `/dashboard/settings`  | Change rate limits, revoke all keys, etc. |
+
+---
+
+## 🧪 Local Dev Environment
+
+### Setup Steps
+
+1. **Initialize Convex**
+
+```bash
+npx convex dev
+```
+
+2. **Setup Resend**
+
+* Get API key → `RESEND_API_KEY=...` in `.env.local`
+
+3. **Start Next.js UI**
+
+```bash
+npm run dev
+```
+
+4. **Test Vercel Proxy Route**
+
+* Simulate `curl -H "Authorization: Bearer sentinel_abc123" /api/proxy`
+
+---
+
+## 🧱 Build Phases
+
+### ✅ Phase 1: Core Platform MVP
+
+* Convex schema
+* Sentinel key creation
+* Secure proxy endpoint
+* Logging of requests
+* Basic dashboard: key manager + usage graph
+
+### ⚙️ Phase 2: Alerts & Access Control
+
+* Trusted users model
+* Invite flow via Resend
+* Recovery link via email
+* Quota enforcement
+* Geo anomaly detection + email
+
+### 🎨 Phase 3: UI Polish & Analytics
+
+* Framer Motion page transitions
+* Full analytics dashboard
+* Settings page (rotate all, revoke all, MFA toggle)
+
+### 🚀 Phase 4: Launch & Docs
+
+* Vercel deployment
+* GitHub README + landing page
+* Docs for API consumers (how to use Sentinel Keys)
+
+---
+
+## ✅ Launch Outcome
+
+You will ship a secure, developer-facing platform that:
+
+| ✅ | Feature                                       |
+| - | --------------------------------------------- |
+| ✅ | Stores & encrypts real provider API keys      |
+| ✅ | Issues scoped, revocable Sentinel Keys        |
+| ✅ | Tracks usage across IPs, endpoints, and users |
+| ✅ | Notifies devs of anomalies and limits         |
+| ✅ | Offers a secure, polished dashboard           |
+| ✅ | Uses Vercel, Convex, and Resend stack         |
+
+---
+
+Would you like me to now:
+
+* Scaffold the Convex schema?
+* Generate `/api/proxy.ts` route code?
+* Set up the Tailwind + Framer dashboard shell?
+* Create the README for this whole project?
+
+Just say the word.
