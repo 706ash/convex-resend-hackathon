@@ -58,22 +58,22 @@ export function UsageAnalytics() {
       </div>
 
       {/* Histogram */}
-      <div className="relative h-36 mb-6 bg-slate-900/30 rounded-lg p-4">
-        <div className="h-full flex items-end justify-center gap-4">
+      <div className="relative h-64 mb-6 bg-slate-900/30 rounded-lg p-4">
+        <div className="h-full flex items-end justify-center gap-8">
           {chartData.map((data, index) => {
             // Calculate height as percentage of container
             const heightPercentage = maxRequests > 0 ? (data.requests / maxRequests) * 100 : 0;
             const minHeight = data.requests > 0 ? Math.max(heightPercentage, 5) : 0; // Minimum 5% height for non-zero values
             
             return (
-              <div key={data.name} className="flex flex-col items-center group relative min-w-0 flex-1 max-w-16">
+              <div key={data.name} className="flex flex-col items-center group relative min-w-0 flex-1 max-w-24">
                 {/* Bar Container */}
-                <div className="relative w-full h-28 flex items-end">
+                <div className="relative w-full h-48 flex items-end">
                   <motion.div
                     initial={{ height: 0 }}
                     animate={{ height: `${minHeight}%` }}
                     transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
-                    className={`w-full bg-gradient-to-t ${data.color} rounded-t-md border border-slate-600/50 min-h-1 relative`}
+                    className={`w-full bg-gradient-to-t ${data.color} rounded-t-lg border-t border-x border-slate-600/50 min-h-1 relative`}
                   >
                     {/* Tooltip */}
                     <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-slate-700">
