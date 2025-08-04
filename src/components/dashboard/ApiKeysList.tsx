@@ -22,6 +22,7 @@ interface ApiKey {
   requests: number;
   status: string;
   lastUsed?: number;
+  sentinelKey?: string;
 }
 
 const maskApiKey = (key: string) => {
@@ -46,11 +47,15 @@ function ApiKeyCard({ apiKey, onEdit, onViewUsage }: ApiKeyCardProps) {
   const { copied, copyToClipboard } = useClipboard();
 
   const handleCopy = async () => {
-    const success = await copyToClipboard(`sentinel_${apiKey.provider}_${apiKey.id}`);
-    if (success) {
-      toast.success('Sentinel key copied to clipboard');
+    if (apiKey.sentinelKey) {
+      const success = await copyToClipboard(apiKey.sentinelKey);
+      if (success) {
+        toast.success('Sentinel key copied to clipboard');
+      } else {
+        toast.error('Failed to copy to clipboard');
+      }
     } else {
-      toast.error('Failed to copy to clipboard');
+      toast.error('Sentinel key not available.');
     }
   };
 
@@ -81,7 +86,7 @@ function ApiKeyCard({ apiKey, onEdit, onViewUsage }: ApiKeyCardProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <code className="text-slate-300 text-sm bg-slate-700/50 px-2 py-1 rounded">
-            {maskApiKey(apiKey.apiKey)}
+            {apiKey.sentinelKey ? maskApiKey(apiKey.sentinelKey) : 'N/A'}
           </code>
           <Button variant="ghost" size="sm" onClick={handleCopy}>
             <Copy className={`w-3 h-3 ${copied ? 'text-green-400' : ''}`} />

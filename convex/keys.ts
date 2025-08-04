@@ -34,7 +34,17 @@ export const addApiKey = mutation({
 
 export const getApiKeys = query({
   handler: async (ctx) => {
-    return await ctx.db.query("api_keys").collect();
+    const apiKeys = await ctx.db.query("api_keys").collect();
+    const apiKeysWithSentinel = await Promise.all(
+      apiKeys.map(async (apiKey) => {
+        const sentinelKey = await ctx.db
+          .query("app_keys")
+          .filter((q) => q.eq(q.field("mapsToKeyId"), apiKey._id))
+          .first();
+        return { ...apiKey, sentinelKey: sentinelKey?.sentinelKey };
+      })
+    );
+    return apiKeysWithSentinel;
   },
 });
 
