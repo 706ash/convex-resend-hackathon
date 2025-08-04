@@ -27,9 +27,9 @@ export const addApiKey = mutation({
       scopes: args.scopes,
       trustedPeople: args.trustedPeople,
       createdAt: Date.now(),
-      lastUsed: args.lastUsed ?? undefined,
       requests: 0,
       status: "active",
+      lastUsed: undefined,
     });
     return newKey;
   },
