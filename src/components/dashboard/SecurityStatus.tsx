@@ -1,36 +1,56 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, CheckCircle, AlertTriangle, Lock, Eye, FileText } from 'lucide-react';
+import { Shield, CheckCircle, AlertTriangle, Lock, Eye, FileText, Mail } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 interface SecurityMetric {
   label: string;
+  value: string;
   status: 'good' | 'warning' | 'error';
   icon: React.ReactNode;
 }
 
 export function SecurityStatus() {
+  const apiKeys = useQuery(api.keys.getApiKeys, undefined);
+
+  if (!apiKeys) {
+    return <div>Loading...</div>;
+  }
+
+  const totalKeys = apiKeys.length;
+  const keysWithScopes = apiKeys.filter(key => key.scopes && key.scopes.length > 0).length;
+  const keysWithRateLimits = apiKeys.filter(key => key.rateLimit > 0).length;
+  const keysWithEmailAlerts = apiKeys.filter(key => key.email).length;
+
   const securityMetrics: SecurityMetric[] = [
     {
-      label: 'Encryption',
+      label: 'Total Keys',
+      value: `${totalKeys}`,
       status: 'good',
       icon: <Lock className="w-4 h-4" />
     },
     {
-      label: 'Access Control',
-      status: 'good',
+      label: 'Keys with Scopes',
+      value: `${keysWithScopes}/${totalKeys}`,
+      status: keysWithScopes === totalKeys ? 'good' : 'warning',
       icon: <Eye className="w-4 h-4" />
     },
     {
-      label: 'Audit Trail',
-      status: 'good',
+      label: 'Keys with Rate Limits',
+      value: `${keysWithRateLimits}/${totalKeys}`,
+      status: keysWithRateLimits === totalKeys ? 'good' : 'warning',
       icon: <FileText className="w-4 h-4" />
     },
     {
-      label: 'Anomaly Detection',
-      status: 'warning',
-      icon: <AlertTriangle className="w-4 h-4" />
+      label: 'Keys with Email Alerts',
+      value: `${keysWithEmailAlerts}/${totalKeys}`,
+      status: keysWithEmailAlerts === totalKeys ? 'good' : 'warning',
+      icon: <Mail className="w-4 h-4" />
     }
   ];
+
+  const securityScore = Math.round(((keysWithScopes + keysWithRateLimits + keysWithEmailAlerts) / (totalKeys * 3)) * 100) || 0;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -76,7 +96,10 @@ export function SecurityStatus() {
               </div>
               <span className="text-slate-300 text-sm">{metric.label}</span>
             </div>
-            {getStatusIcon(metric.status)}
+            <div className="flex items-center space-x-2">
+              <span className="text-slate-400 text-sm">{metric.value}</span>
+              {getStatusIcon(metric.status)}
+            </div>
           </motion.div>
         ))}
       </div>
@@ -84,12 +107,12 @@ export function SecurityStatus() {
       <div className="bg-slate-700/50 rounded-lg p-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-slate-400 text-sm">Security Score</span>
-          <span className="text-blue-400 text-sm">98/100</span>
+          <span className="text-blue-400 text-sm">{securityScore}/100</span>
         </div>
         <div className="w-full bg-slate-600 rounded-full h-2">
           <motion.div
             initial={{ width: 0 }}
-            animate={{ width: '98%' }}
+            animate={{ width: `${securityScore}%` }}
             transition={{ duration: 1, delay: 0.5 }}
             className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full"
           />
