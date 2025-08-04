@@ -9,10 +9,10 @@ interface NavigationProps {
 
 export function Navigation({ onNavigate }: NavigationProps) {
   const navItems = [
-    { label: 'Features', href: '#features' },
-    { label: 'Security', href: '#security' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'Docs', href: '#docs' }
+    // { label: 'Features', href: '#features' },
+    // { label: 'Security', href: '#security' },
+    // { label: 'Pricing', href: '#pricing' },
+    // { label: 'Docs', href: '#docs' }
   ];
 
   return (
