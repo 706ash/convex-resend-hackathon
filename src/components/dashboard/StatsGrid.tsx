@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Key, BarChart3, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 
 interface StatCardProps {
   title: string;
@@ -40,10 +42,20 @@ function StatCard({ title, value, change, changeType, icon, color }: StatCardPro
 }
 
 export function StatsGrid() {
+  const apiKeys = useQuery(api.keys.getApiKeys, undefined);
+
+  if (!apiKeys) {
+    return <div>Loading...</div>;
+  }
+
+  const totalKeys = apiKeys.length;
+  const totalRequests = apiKeys.reduce((sum, key) => sum + key.requests, 0);
+  const alerts = apiKeys.filter(key => key.requests / key.rateLimit >= 0.8).length;
+
   const stats = [
     {
       title: 'Active Keys',
-      value: 2,
+      value: totalKeys,
       change: '+2 this week',
       changeType: 'positive' as const,
       icon: <Key className="w-5 h-5 text-blue-400" />,
@@ -51,7 +63,7 @@ export function StatsGrid() {
     },
     {
       title: 'Requests',
-      value: 6,
+      value: totalRequests,
       change: '+15% today',
       changeType: 'positive' as const,
       icon: <BarChart3 className="w-5 h-5 text-purple-400" />,
@@ -67,9 +79,9 @@ export function StatsGrid() {
     },
     {
       title: 'Alerts',
-      value: 0,
-      change: '0 pending',
-      changeType: 'neutral' as const,
+      value: alerts,
+      change: `${alerts} pending`,
+      changeType: alerts > 0 ? 'warning' : 'neutral' as const,
       icon: <AlertTriangle className="w-5 h-5 text-yellow-400" />,
       color: 'bg-yellow-500/20'
     }
