@@ -48,6 +48,41 @@ export const getApiKeys = query({
   },
 });
 
+export const getApiKeyBySentinelKey = query({
+  args: {
+    sentinelKey: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const appKey = await ctx.db
+      .query("app_keys")
+      .filter((q) => q.eq(q.field("sentinelKey"), args.sentinelKey))
+      .first();
+
+    if (!appKey) {
+      return null;
+    }
+
+    const apiKey = await ctx.db.get(appKey.mapsToKeyId);
+    return apiKey;
+  },
+});
+
+export const logApiKeyUsage = mutation({
+  args: {
+    apiKeyId: v.id("api_keys"),
+    tokensUsed: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = await ctx.db.get(args.apiKeyId);
+    if (apiKey) {
+      await ctx.db.patch(args.apiKeyId, {
+        requests: apiKey.requests + 1,
+        lastUsed: Date.now(),
+      });
+    }
+  },
+});
+
 export const addSentinelKey = mutation({
   args: {
     sentinelKey: v.string(),
