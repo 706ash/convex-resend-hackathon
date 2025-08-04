@@ -10,17 +10,26 @@ import { toast } from 'sonner';
 interface ApiKey {
   _id: string;
   _creationTime: number;
+  userId: string;
   name: string;
   provider: string;
-  apiKey: string; // This will be masked for display
+  apiKey: string;
   description?: string;
   rateLimit: number;
   scopes: string[];
   trustedPeople?: string[];
+  createdAt: number;
   requests: number;
-  status: 'active' | 'inactive';
-  lastUsed: number | null;
+  status: string;
+  lastUsed?: number;
 }
+
+const maskApiKey = (key: string) => {
+  if (!key) return '';
+  const prefix = key.substring(0, 5);
+  const suffix = key.substring(key.length - 5);
+  return `${prefix}*****${suffix}`;
+};
 
 interface ApiKeyCardProps {
   apiKey: ApiKey;
@@ -72,7 +81,7 @@ function ApiKeyCard({ apiKey, onEdit, onViewUsage }: ApiKeyCardProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <code className="text-slate-300 text-sm bg-slate-700/50 px-2 py-1 rounded">
-            {apiKey.maskedKey}
+            {maskApiKey(apiKey.apiKey)}
           </code>
           <Button variant="ghost" size="sm" onClick={handleCopy}>
             <Copy className={`w-3 h-3 ${copied ? 'text-green-400' : ''}`} />
@@ -106,26 +115,7 @@ interface ApiKeysListProps {
 }
 
 export function ApiKeysList({ onEditKey, onViewUsage }: ApiKeysListProps) {
-  const apiKeys: ApiKey[] = [
-    {
-      id: '1',
-      name: 'OpenAI GPT-4',
-      provider: 'OpenAI',
-      maskedKey: 'sentinel_oai_ab*****',
-      requests: 1023,
-      status: 'active',
-      lastUsed: '2 minutes ago'
-    },
-    {
-      id: '2',
-      name: 'Gemini Pro',
-      provider: 'Google',
-      maskedKey: 'sentinel_gem_xy*****',
-      requests: 246,
-      status: 'active',
-      lastUsed: '5 minutes ago'
-    }
-  ];
+  const apiKeys = useQuery(api.keys.getApiKeys);
 
   return (
     <div className="space-y-6">
