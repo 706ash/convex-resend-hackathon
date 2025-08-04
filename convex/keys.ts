@@ -62,3 +62,19 @@ export const addSentinelKey = mutation({
     return newSentinelKey;
   },
 });
+
+export const addTrustedPerson = mutation({
+  args: {
+    ownerId: v.string(),
+    trustedEmail: v.string(),
+    provider: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const newTrustedPerson = await ctx.db.insert("trusted_people", {
+      ownerId: args.ownerId,
+      trustedEmail: args.trustedEmail,
+      provider: args.provider,
+    });
+    return newTrustedPerson;
+  },
+});

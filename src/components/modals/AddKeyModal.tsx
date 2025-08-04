@@ -36,6 +36,7 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
 
   const addApiKey = useMutation(api.keys.addApiKey);
       const addSentinelKey = useMutation(api.keys.addSentinelKey);
+      const addTrustedPerson = useMutation(api.keys.addTrustedPerson);
 
   const providerOptions = [
     { value: '', label: 'Select a provider' },
@@ -57,7 +58,6 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
         description: data.description,
         rateLimit: data.rateLimit,
         scopes: data.scopes ?? [],
-        trustedPeople: trustedPeopleArray,
       });
 
       // Generate and store sentinel key
@@ -67,7 +67,16 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
         mapsToKeyId: newKeyId,
       });
 
-      toast.success('API key and Sentinel Key added successfully!');
+      // Add trusted people to the trusted_people table
+      for (const email of trustedPeopleArray) {
+        await addTrustedPerson({
+          ownerId: 'demo-user-id', // Replace with real user ID
+          trustedEmail: email,
+          provider: data.provider, // Optional: scope trusted person to this provider
+        });
+      }
+
+      toast.success('API key, Sentinel Key, and Trusted People added successfully!');
       reset();
       onClose();
       onSuccess?.();
