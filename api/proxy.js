@@ -59,7 +59,7 @@ export default async function (req, res) {
         headers["Authorization"] = `Bearer ${externalApiKey}`;
         break;
       case "gemini":
-        proxyUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${encodeURIComponent(externalApiKey)}`;
+        proxyUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(externalApiKey)}`;
         break;
       default:
         return res.status(400).json({ error: `Unsupported provider: ${provider}` });
