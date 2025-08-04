@@ -37,3 +37,18 @@ export const getApiKeys = query({
     return await ctx.db.query("api_keys").collect();
   },
 });
+
+export const addSentinelKey = mutation({
+  args: {
+    sentinelKey: v.string(),
+    mapsToKeyId: v.id("api_keys"),
+  },
+  handler: async (ctx, args) => {
+    const newSentinelKey = await ctx.db.insert("app_keys", {
+      sentinelKey: args.sentinelKey,
+      mapsToKeyId: args.mapsToKeyId,
+      createdAt: Date.now(),
+    });
+    return newSentinelKey;
+  },
+});
