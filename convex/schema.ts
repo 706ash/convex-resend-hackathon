@@ -9,6 +9,7 @@ export default defineSchema({
     provider: v.string(),             // e.g., "openai", "gemini", "qloo"
     apiKey: v.string(),               // Encrypted key string
     description: v.optional(v.string()),
+    email: v.optional(v.string()),
     rateLimit: v.number(),     // User-defined limit
     scopes: v.array(v.string()),
     trustedPeople: v.optional(v.array(v.string())),
@@ -16,6 +17,7 @@ export default defineSchema({
     lastUsed: v.optional(v.number()),
     requests: v.number(),
     status: v.string(),
+    lastEmailSent: v.optional(v.number()),
   }).index("by_user", ["userId"]),
 
   trusted_people: defineTable({

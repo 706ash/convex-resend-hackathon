@@ -7,6 +7,7 @@ export const addApiKeySchema = z.object({
   }),
   apiKey: z.string().min(10, 'API key is required'),
   description: z.string().optional(),
+  email: z.string().email('Invalid email address').optional(), // New email field
   rateLimit: z.number().min(1).max(10000).default(1000),
   scopes: z.array(z.string()).default([]),
   trustedPeople: z.string().optional(),

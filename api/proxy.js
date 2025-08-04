@@ -10,6 +10,7 @@ export default async function (req, res) {
   }
 
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  console.log("Vercel function using Convex URL:", convexUrl);
   if (!convexUrl) {
     console.error("NEXT_PUBLIC_CONVEX_URL is not set");
     return res.status(500).json({ error: 'Convex URL not configured' });
@@ -21,22 +22,30 @@ export default async function (req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        path: 'keys.getApiKeyBySentinelKey.js',
+        path: 'keys:fetchApiKeyBySentinelKey', // Fixed: removed .js and used colon syntax
         args: { sentinelKey: appKey },
       }),
     });
+    
     const apiKeyData = await apiKeyDataResponse.json();
     console.log("Received apiKeyData from Convex:", apiKeyData);
 
-    if (!apiKeyData) {
-      return res.status(401).json({ error: 'Unauthorized: Invalid app key' });
+    if (!apiKeyData || apiKeyData.status === 'error') {
+      console.error("Convex query error:", apiKeyData);
+      return res.status(401).json({ error: 'Unauthorized: Invalid app key or Convex error' });
     }
 
-    if (apiKeyData.provider !== provider) {
-      return res.status(400).json({ error: `Bad Request: App key is linked to ${apiKeyData.provider}, not ${provider}` });
+    const actualApiKeyData = apiKeyData.value;
+
+    if (!actualApiKeyData) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid app key (no value)' });
     }
 
-    const externalApiKey = apiKeyData.apiKey;
+    if (actualApiKeyData.provider !== provider) {
+      return res.status(400).json({ error: `Bad Request: App key is linked to ${actualApiKeyData.provider}, not ${provider}` });
+    }
+
+    const externalApiKey = actualApiKeyData.apiKey;
     let proxyUrl = "";
     let headers = {
       "Content-Type": "application/json",
@@ -50,7 +59,7 @@ export default async function (req, res) {
         headers["Authorization"] = `Bearer ${externalApiKey}`;
         break;
       case "gemini":
-        proxyUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${encodeURIComponent(externalApiKey)}`;
+        proxyUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(externalApiKey)}`;
         break;
       default:
         return res.status(400).json({ error: `Unsupported provider: ${provider}` });
@@ -76,8 +85,8 @@ export default async function (req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        path: 'keys.logApiKeyUsage.js',
-        args: { apiKeyId: apiKeyData._id, tokensUsed },
+        path: 'keys:logApiKeyUsage',
+        args: { apiKeyId: actualApiKeyData._id, tokensUsed },
       }),
     });
 
