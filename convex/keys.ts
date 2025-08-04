@@ -48,11 +48,12 @@ export const getApiKeys = query({
   },
 });
 
-export const getApiKeyBySentinelKey = query({
+export const fetchApiKeyBySentinelKey = query({
   args: {
     sentinelKey: v.string(),
   },
   handler: async (ctx, args) => {
+    // This function retrieves an API key by its sentinel key.
     const appKey = await ctx.db
       .query("app_keys")
       .filter((q) => q.eq(q.field("sentinelKey"), args.sentinelKey))
