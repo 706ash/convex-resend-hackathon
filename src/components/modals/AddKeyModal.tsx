@@ -58,6 +58,7 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
         description: data.description,
         rateLimit: data.rateLimit,
         scopes: data.scopes ?? [],
+        email: data.email, // Pass the email to the mutation
       });
 
       // Generate and store sentinel key
@@ -93,7 +94,7 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add New API Key" size="lg">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-h-[80vh] overflow-y-auto p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Key Name"
@@ -124,6 +125,15 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
           placeholder="Brief description of this key's purpose"
           error={errors.description?.message}
           {...register('description')}
+        />
+
+        <Input
+          label="Email for Reminders (Optional)"
+          type="email"
+          placeholder="e.g., your-email@example.com"
+          error={errors.email?.message}
+          helperText="Receive notifications for usage limits"
+          {...register('email')}
         />
 
         <Input
