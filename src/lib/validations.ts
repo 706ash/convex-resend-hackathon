@@ -9,6 +9,7 @@ export const addApiKeySchema = z.object({
   description: z.string().optional(),
   rateLimit: z.number().min(1).max(10000).default(1000),
   scopes: z.array(z.string()).default([]),
+  trustedPeople: z.string().optional(),
 });
 
 export const editApiKeySchema = z.object({

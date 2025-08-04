@@ -11,6 +11,9 @@ import { Button } from '../ui/Button';
 import { addApiKeySchema, type AddApiKeyData } from '../../lib/validations';
 import { Key, Shield } from 'lucide-react';
 
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api'; // adjust path if needed
+
 interface AddKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,6 +34,8 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
     },
   });
 
+  const addApiKey = useMutation(api.keys.addApiKey);
+
   const providerOptions = [
     { value: '', label: 'Select a provider' },
     { value: 'openai', label: 'OpenAI' },
@@ -39,14 +44,27 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
 
   const onSubmit = async (data: AddApiKeyData) => {
     try {
-      // Simulate API call to Convex
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const trustedPeopleArray = data.trustedPeople
+        ? data.trustedPeople.split(',').map(email => email.trim())
+        : [];
+
+      await addApiKey({
+        userId: 'demo-user-id', // Replace with real user ID from auth if available
+        name: data.name,
+        provider: data.provider,
+        apiKey: data.apiKey,
+        description: data.description,
+        rateLimit: data.rateLimit,
+        scopes: data.scopes ?? [],
+        trustedPeople: trustedPeopleArray,
+      });
+
       toast.success('API key added successfully!');
       reset();
       onClose();
       onSuccess?.();
     } catch (error) {
+      console.error('Error adding API key:', error);
       toast.error('Failed to add API key. Please try again.');
     }
   };
@@ -66,7 +84,7 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
             error={errors.name?.message}
             {...register('name')}
           />
-          
+
           <Select
             label="Provider"
             options={providerOptions}
@@ -100,6 +118,13 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
           {...register('rateLimit', { valueAsNumber: true })}
         />
 
+        <Input
+          label="Trusted People (comma-separated emails)"
+          placeholder="e.g., user1@example.com, user2@example.com"
+          error={errors.trustedPeople?.message}
+          {...register('trustedPeople')}
+        />
+
         <div className="bg-slate-700/50 rounded-lg p-4">
           <div className="flex items-center space-x-2 mb-2">
             <Shield className="w-4 h-4 text-blue-400" />
@@ -117,9 +142,9 @@ export function AddKeyModal({ isOpen, onClose, onSuccess }: AddKeyModalProps) {
           <Button variant="ghost" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button 
-            type="submit" 
-            icon={Key} 
+          <Button
+            type="submit"
+            icon={Key}
             disabled={isSubmitting}
             className="min-w-[120px]"
           >

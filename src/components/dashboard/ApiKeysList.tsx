@@ -1,4 +1,6 @@
 import React from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
 import { motion } from 'framer-motion';
 import { Key, Copy, MoreVertical, Activity, Edit, Eye } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -6,13 +8,18 @@ import { useClipboard } from '../../hooks/useClipboard';
 import { toast } from 'sonner';
 
 interface ApiKey {
-  id: string;
+  _id: string;
+  _creationTime: number;
   name: string;
   provider: string;
-  maskedKey: string;
+  apiKey: string; // This will be masked for display
+  description?: string;
+  rateLimit: number;
+  scopes: string[];
+  trustedPeople?: string[];
   requests: number;
   status: 'active' | 'inactive';
-  lastUsed: string;
+  lastUsed: number | null;
 }
 
 interface ApiKeyCardProps {
@@ -137,20 +144,26 @@ export function ApiKeysList({ onEditKey, onViewUsage }: ApiKeysListProps) {
       </div>
       
       <div className="space-y-4">
-        {apiKeys.map((apiKey, index) => (
-          <motion.div
-            key={apiKey.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <ApiKeyCard 
-              apiKey={apiKey} 
-              onEdit={onEditKey}
-              onViewUsage={onViewUsage}
-            />
-          </motion.div>
-        ))}
+        {!apiKeys ? (
+          <p className="text-slate-400">Loading API keys...</p>
+        ) : apiKeys.length === 0 ? (
+          <p className="text-slate-400">No API keys found. Add a new key to get started.</p>
+        ) : (
+          apiKeys.map((apiKey, index) => (
+            <motion.div
+              key={apiKey._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <ApiKeyCard 
+                apiKey={apiKey} 
+                onEdit={onEditKey}
+                onViewUsage={onViewUsage}
+              />
+            </motion.div>
+          ))
+        )}
       </div>
     </div>
   );
