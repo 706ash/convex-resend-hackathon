@@ -1,19 +1,38 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+
+// Generate distinct gradient colors
+const generateColorPalette = (numColors: number): string[] => {
+  return [
+    'from-green-500 to-emerald-500',
+    'from-blue-500 to-cyan-500',
+    'from-purple-500 to-pink-500',
+    'from-orange-500 to-red-500',
+    'from-yellow-500 to-amber-500',
+    'from-teal-500 to-cyan-400',
+    'from-indigo-500 to-violet-500',
+  ].slice(0, numColors);
+};
 
 export function UsageAnalytics() {
-  // Changed from days to API providers
-  const chartData = [
-    { provider: 'OpenAI', requests: 12, color: 'from-green-500 to-emerald-500' },
-    { provider: 'Gemini', requests: 8, color: 'from-blue-500 to-cyan-500' },
-    { provider: 'Claude', requests: 6, color: 'from-purple-500 to-pink-500' },
-    { provider: 'Anthropic', requests: 4, color: 'from-orange-500 to-red-500' },
-    { provider: 'Cohere', requests: 2, color: 'from-yellow-500 to-amber-500' }
-  ];
+  const apiKeys = useQuery(api.keys.getApiKeys, undefined);
 
-  const maxRequests = Math.max(...chartData.map(d => d.requests));
+  if (!apiKeys) return <div>Loading...</div>;
+
+  const colors = generateColorPalette(apiKeys.length);
+
+  const chartData = apiKeys.map((key, index) => ({
+    name: key.name,
+    requests: key.requests,
+    color: colors[index % colors.length],
+  }));
+
+  const maxRequests = Math.max(...chartData.map((d) => d.requests), 1);
   const totalRequests = chartData.reduce((sum, d) => sum + d.requests, 0);
+  const topKey = chartData.reduce((prev, curr) => curr.requests > prev.requests ? curr : prev, chartData[0]);
 
   return (
     <motion.div
@@ -21,14 +40,15 @@ export function UsageAnalytics() {
       animate={{ opacity: 1, y: 0 }}
       className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6"
     >
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-purple-500/20 rounded-lg">
             <BarChart3 className="w-5 h-5 text-purple-400" />
           </div>
           <div>
-            <h3 className="text-white font-semibold">API Usage by Provider</h3>
-            <p className="text-slate-400 text-sm">Request distribution across providers</p>
+            <h3 className="text-white font-semibold">API Usage by Key Name</h3>
+            <p className="text-slate-400 text-sm">Request distribution across your API keys</p>
           </div>
         </div>
         <div className="flex items-center space-x-2 text-green-400 text-sm">
@@ -37,70 +57,62 @@ export function UsageAnalytics() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-end justify-between h-32 space-x-3">
-          {chartData.map((data, index) => (
-            <div key={data.provider} className="flex flex-col items-center space-y-2 flex-1">
-              <motion.div
-                initial={{ height: 0 }}
-                animate={{ height: `${(data.requests / maxRequests) * 100}%` }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className={`bg-gradient-to-t ${data.color} rounded-t min-h-[4px] w-full relative group`}
-              >
-                {/* Tooltip on hover */}
-                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {data.requests} requests
+      {/* Histogram */}
+      <div className="relative h-36 mb-6 bg-slate-900/30 rounded-lg p-4">
+        <div className="h-full flex items-end justify-center gap-4">
+          {chartData.map((data, index) => {
+            // Calculate height as percentage of container
+            const heightPercentage = maxRequests > 0 ? (data.requests / maxRequests) * 100 : 0;
+            const minHeight = data.requests > 0 ? Math.max(heightPercentage, 5) : 0; // Minimum 5% height for non-zero values
+            
+            return (
+              <div key={data.name} className="flex flex-col items-center group relative min-w-0 flex-1 max-w-16">
+                {/* Bar Container */}
+                <div className="relative w-full h-28 flex items-end">
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: `${minHeight}%` }}
+                    transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
+                    className={`w-full bg-gradient-to-t ${data.color} rounded-t-md border border-slate-600/50 min-h-1 relative`}
+                  >
+                    {/* Tooltip */}
+                    <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-slate-700">
+                      {data.requests} requests
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-slate-900"></div>
+                    </div>
+                  </motion.div>
                 </div>
-              </motion.div>
-              <span className="text-slate-400 text-xs text-center leading-tight">
-                {data.provider}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-700/50">
-          <div className="text-center">
-            <div className="text-green-400 text-xl font-bold">
-              {Math.max(...chartData.map(d => d.requests))}
-            </div>
-            <div className="text-slate-400 text-xs">Top Provider</div>
-          </div>
-          <div className="text-center">
-            <div className="text-purple-400 text-xl font-bold">{totalRequests}</div>
-            <div className="text-slate-400 text-xs">Total Requests</div>
-          </div>
-          <div className="text-center">
-            <div className="text-blue-400 text-xl font-bold">
-              {chartData.length}
-            </div>
-            <div className="text-slate-400 text-xs">Active Providers</div>
-          </div>
-        </div>
-
-        {/* Provider breakdown list */}
-        <div className="mt-6 space-y-2">
-          <h4 className="text-slate-300 text-sm font-medium mb-3">Provider Breakdown</h4>
-          {chartData.map((data, index) => (
-            <motion.div
-              key={data.provider}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 + index * 0.1 }}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/30 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${data.color}`} />
-                <span className="text-slate-300 text-sm">{data.provider}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-slate-400 text-sm">{data.requests} requests</span>
-                <span className="text-slate-500 text-xs">
-                  ({Math.round((data.requests / totalRequests) * 100)}%)
+                
+                {/* Label */}
+                <span className="text-xs text-slate-400 mt-2 text-center truncate w-full px-1" title={data.name}>
+                  {data.name}
                 </span>
               </div>
-            </motion.div>
-          ))}
+            );
+          })}
+        </div>
+        
+        {/* No data message */}
+        {chartData.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-sm">
+            No API keys found
+          </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 border-t border-slate-700/50 pt-4">
+        <div className="text-center">
+          <div className="text-green-400 text-xl font-bold">{topKey?.name || 'N/A'}</div>
+          <div className="text-slate-400 text-xs">Top Key</div>
+        </div>
+        <div className="text-center">
+          <div className="text-purple-400 text-xl font-bold">{totalRequests.toLocaleString()}</div>
+          <div className="text-slate-400 text-xs">Total Requests</div>
+        </div>
+        <div className="text-center">
+          <div className="text-blue-400 text-xl font-bold">{chartData.length}</div>
+          <div className="text-slate-400 text-xs">Active Keys</div>
         </div>
       </div>
     </motion.div>
